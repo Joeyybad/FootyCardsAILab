@@ -1,0 +1,7 @@
+{
+  "name": "FootyCards AI Lab",
+  "description": "A high-end football card collection platform that uses Gemini AI to scout real players, generate cinematic portraits, and manage a digital treasury of football stars.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
