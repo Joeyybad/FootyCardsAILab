@@ -3,7 +3,7 @@ import {
   Search, Plus, Trophy, Briefcase, Trash2, ExternalLink, 
   Loader2, Sparkles, Filter, Sun, Moon, Swords, Check, 
   AlertCircle, Link as LinkIcon, Image as ImageIcon,
-  Upload, Settings2, RefreshCw, Globe, Crown, Diamond, Zap, Medal, X, Save
+  Upload, Settings2, RefreshCw, Globe, Crown, Diamond, Zap, Medal, X, Save, Copy
 } from 'lucide-react';
 import { PlayerCard, PlayerRarity, PlayerStats } from './types';
 import { generatePlayerData, generatePlayerImage } from './services/geminiService';
@@ -73,20 +73,38 @@ const CardItem: React.FC<{
     >
       <div className="aspect-[3/4] overflow-hidden relative bg-slate-900 flex items-center justify-center">
         {!imgError && card.imageUrl ? (
-          <img src={card.imageUrl} alt={card.name} onError={() => setImgError(true)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+          <img 
+            src={card.imageUrl} 
+            alt={card.name} 
+            referrerPolicy="no-referrer"
+            onError={() => setImgError(true)} 
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+          />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-slate-950">
             <ImageIcon className="text-white/10 mb-2" size={32} />
-            <span className="text-[10px] uppercase font-bold text-white/30 tracking-widest">Portrait Restricted</span>
-            <button 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                window.open(`https://www.google.com/search?q=${encodeURIComponent(card.name + ' ' + card.club + ' official football photo')}&tbm=isch`, '_blank'); 
-              }} 
-              className="mt-3 px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-[9px] uppercase font-bold text-white/50 border border-white/10 transition-colors"
-            >
-              Search Web
-            </button>
+            <span className="text-[10px] uppercase font-bold text-white/30 tracking-widest leading-tight">Portrait Refused</span>
+            <div className="flex flex-col gap-2 mt-4 w-full px-2">
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  window.open(`https://www.google.com/search?q=${encodeURIComponent(card.name + ' ' + card.club + ' official football photo')}&tbm=isch`, '_blank'); 
+                }} 
+                className="w-full py-1.5 bg-blue-600/20 hover:bg-blue-600/30 rounded-lg text-[9px] uppercase font-bold text-blue-400 border border-blue-600/20 transition-colors"
+              >
+                Search Web
+              </button>
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  navigator.clipboard.writeText(card.imageUrl);
+                  alert('URL Copied: ' + card.imageUrl);
+                }} 
+                className="w-full py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-[9px] uppercase font-bold text-white/40 border border-white/10 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Copy size={10} /> Copy Source
+              </button>
+            </div>
           </div>
         )}
         {(isLegendary || isEpic) && <div className="absolute inset-0 card-shimmer pointer-events-none opacity-40" />}
@@ -424,7 +442,12 @@ export default function App() {
                 <div className={`w-full max-w-sm rounded-[1.5rem] glass p-6 border transition-all duration-700 ${selectedCard.rarity.toString().toUpperCase().includes('LEGENDARY') ? 'border-yellow-500/50 shadow-2xl shadow-yellow-500/20' : (theme === 'dark' ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 shadow-2xl bg-white/70')}`}>
                   <div className="aspect-[3/4] rounded-[1.25rem] overflow-hidden mb-8 bg-slate-900 flex items-center justify-center relative shadow-inner">
                     {selectedCard.imageUrl ? (
-                      <img src={selectedCard.imageUrl} className="w-full h-full object-cover" alt={selectedCard.name} />
+                      <img 
+                        src={selectedCard.imageUrl} 
+                        className="w-full h-full object-cover" 
+                        alt={selectedCard.name} 
+                        referrerPolicy="no-referrer"
+                      />
                     ) : (
                       <ImageIcon className="text-white/5" size={64} />
                     )}

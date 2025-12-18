@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { PlayerCard, PlayerRarity, GroundingSource } from "../types";
 
@@ -9,7 +8,10 @@ export const generatePlayerData = async (prompt: string): Promise<{ data: Partia
     model: 'gemini-3-flash-preview',
     contents: `Scout the professional Association Football (Soccer) player: "${prompt}". 
     1. Retrieve real-world stats (0-99) and market data.
-    2. FIND a direct, hotlink-friendly image URL (JPG/PNG) of this player.
+    2. FIND a direct, hotlink-friendly RAW image URL (JPG/PNG) of this player. 
+       - HIGHLY PREFER direct image paths from Wikimedia Commons (e.g., https://upload.wikimedia.org/.../name.jpg).
+       - AVOID page URLs (e.g., AVOID URLs containing "/wiki/File:"). 
+       - Ensure the URL ends in a common image extension (.jpg, .png, .webp).
     3. Return a detailed scouting report in JSON.
     
     Response MUST be valid JSON.
