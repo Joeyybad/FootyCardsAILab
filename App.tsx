@@ -3,12 +3,14 @@ import {
   Search, Plus, Trophy, Briefcase, Trash2, ExternalLink, 
   Loader2, Sparkles, Filter, Sun, Moon, Swords, Check, 
   AlertCircle, Link as LinkIcon, Image as ImageIcon,
-  Upload, Settings2, RefreshCw, Globe, Crown, Diamond, Zap, Medal, X, Save, Copy, Camera
+  Upload, Settings2, RefreshCw, Globe, Crown, Diamond, Zap, Medal, X, Save, Copy, Camera,
+  BookOpen, HelpCircle, Info, ShieldCheck, ZapOff
 } from 'lucide-react';
 import { PlayerCard, PlayerRarity, PlayerStats } from './types';
 import { generatePlayerData, generatePlayerImage } from './services/geminiService';
 
 type Theme = 'light' | 'dark';
+type ViewState = 'gallery' | 'faq';
 
 // Utility to convert Wikipedia page URLs to raw image URLs
 const autoFixWikipediaUrl = (url: string): string => {
@@ -32,8 +34,6 @@ const autoFixWikipediaUrl = (url: string): string => {
 
   // Handle generic Wikimedia page links
   if (url.includes('wikimedia.org/wiki/') && !url.includes('File:')) {
-    // This is likely a gallery or category page, we can't easily fix it without more context
-    // but we return it as is and hope the AI provided something usable
     return url;
   }
   
@@ -79,6 +79,18 @@ const StatBar: React.FC<{ label: string; value: number; theme: Theme; highlight?
   </div>
 );
 
+const FAQItem: React.FC<{ question: string; answer: string; icon: React.ReactNode; theme: Theme }> = ({ question, answer, icon, theme }) => (
+  <div className={`p-6 rounded-3xl border transition-all hover:border-blue-500/50 ${theme === 'dark' ? 'bg-white/[0.03] border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}>
+    <div className="flex items-start gap-4">
+      <div className="p-3 bg-blue-600/10 text-blue-500 rounded-2xl">{icon}</div>
+      <div className="space-y-2">
+        <h4 className="text-lg font-oswald uppercase tracking-tight">{question}</h4>
+        <p className={`text-sm leading-relaxed opacity-70 ${theme === 'dark' ? 'font-light' : ''}`}>{answer}</p>
+      </div>
+    </div>
+  </div>
+);
+
 const CardItem: React.FC<{ 
   card: PlayerCard; 
   onDelete: (id: string) => void;
@@ -92,10 +104,8 @@ const CardItem: React.FC<{
   const isEpic = rarityStr.includes('EPIC');
   const [imgError, setImgError] = useState(false);
   
-  // Detect if image is AI generated or Grounded
   const isAIImage = card.imageUrl && card.imageUrl.startsWith('data:');
 
-  // Clear image error if the URL changes
   useEffect(() => {
     setImgError(false);
   }, [card.imageUrl]);
@@ -136,7 +146,6 @@ const CardItem: React.FC<{
           </div>
         )}
         
-        {/* Source indicator */}
         <div className="absolute bottom-4 right-4 z-20">
           {isAIImage ? (
              <div className="p-1.5 bg-purple-500 text-white rounded-lg shadow-lg" title="AI Synthesized Portrait"><Sparkles size={12} /></div>
@@ -174,6 +183,7 @@ export default function App() {
   const [scoutError, setScoutError] = useState<string | null>(null);
   const [filter, setFilter] = useState<PlayerRarity | 'ALL'>('ALL');
   const [theme, setTheme] = useState<Theme>('dark');
+  const [view, setView] = useState<ViewState>('gallery');
   const [isAdvanced, setIsAdvanced] = useState(false);
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [uploadedBase64, setUploadedBase64] = useState<string | null>(null);
@@ -239,7 +249,7 @@ export default function App() {
 
   const handleScout = async () => {
     if (!searchTerm.trim()) return;
-    setIsScouting(true); setScoutError(null);
+    setIsScouting(true); setScoutError(null); setView('gallery');
     setScoutProgress('Synchronizing Player Intel...');
     
     try {
@@ -253,16 +263,12 @@ export default function App() {
       } else {
         setScoutProgress(`Forging Cinematic Portrait...`);
         try {
-          // Attempt AI Generation
           finalImageUrl = await generatePlayerImage(data.name || 'Unknown', data.club || 'Free Agent', data.rarity as PlayerRarity);
         } catch (imgErr: any) { 
-          // If AI is blocked (safety) or failed, use the search grounded image immediately
-          console.warn("AI Generation blocked or failed, falling back to grounded search link.");
           finalImageUrl = autoFixWikipediaUrl(data.suggestedImageUrl || ''); 
         }
       }
 
-      // Normalization Layer
       let normalizedRarity = PlayerRarity.COMMON;
       if (data.rarity) {
         const r = data.rarity.charAt(0).toUpperCase() + data.rarity.slice(1).toLowerCase();
@@ -323,7 +329,7 @@ export default function App() {
       {/* Sidebar Navigation */}
       <aside className={`w-full md:w-[22rem] p-8 glass border-r flex flex-col gap-8 h-screen sticky top-0 z-30 overflow-y-auto ${theme === 'dark' ? 'bg-[#0a0a0c]/80 border-white/10' : 'bg-white/95 border-slate-200 shadow-2xl'}`}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 cursor-pointer" onClick={() => { setView('gallery'); setSelectedCard(null); }}>
             <div className="w-12 h-12 rounded-[1.25rem] flex items-center justify-center bg-blue-600 shadow-xl shadow-blue-600/30 transform rotate-3"><Trophy className="text-white" size={28} /></div>
             <div>
               <h1 className="font-oswald text-2xl font-bold uppercase tracking-tight leading-none mb-1">FootyCards</h1>
@@ -378,7 +384,7 @@ export default function App() {
 
         <div className="flex-1 space-y-6">
           <button 
-            onClick={() => { setIsComparisonMode(!isComparisonMode); setComparisonSelection([]); setSelectedCard(null); }} 
+            onClick={() => { setView('gallery'); setIsComparisonMode(!isComparisonMode); setComparisonSelection([]); setSelectedCard(null); }} 
             className={`w-full py-5 rounded-[1.5rem] font-bold text-xs uppercase flex items-center justify-center gap-3 border transition-all duration-500 ${isComparisonMode ? 'bg-blue-600 text-white shadow-2xl shadow-blue-600/40 border-blue-500' : (theme === 'dark' ? 'hover:bg-white/5 border-white/10' : 'hover:bg-slate-100 border-slate-200')}`}
           >
             <Swords size={20} /> {isComparisonMode ? 'Exit Battle Mode' : 'Enter Battle Arena'}
@@ -397,18 +403,18 @@ export default function App() {
 
           <div className="space-y-3">
             <h2 className="text-[10px] font-black uppercase tracking-widest opacity-50 flex items-center gap-2"><Filter size={14} /> Tier Filters</h2>
-            <button 
-              onClick={() => setFilter('ALL')} 
-              className={`w-full text-[10px] font-black px-4 py-3.5 rounded-2xl border transition-all text-left flex justify-between items-center ${filter === 'ALL' ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'opacity-40 hover:opacity-100 border-transparent hover:bg-white/5'}`}
-            >
-              All Assets <span>{collection.length}</span>
-            </button>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="flex flex-col gap-2">
+              <button 
+                onClick={() => { setView('gallery'); setFilter('ALL'); }} 
+                className={`w-full text-[10px] font-black px-4 py-3.5 rounded-2xl border transition-all text-left flex justify-between items-center ${filter === 'ALL' && view === 'gallery' ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'opacity-40 hover:opacity-100 border-transparent hover:bg-white/5'}`}
+              >
+                All Assets <span>{collection.length}</span>
+              </button>
               {Object.values(PlayerRarity).map(r => (
                 <button 
                   key={r} 
-                  onClick={() => setFilter(r as any)} 
-                  className={`text-[10px] font-black px-4 py-3.5 rounded-2xl border flex items-center gap-3 transition-all ${filter === r ? getRarityColorClasses(r) : 'opacity-40 hover:opacity-100 border-transparent hover:bg-white/5'}`}
+                  onClick={() => { setView('gallery'); setFilter(r as any); }} 
+                  className={`text-[10px] font-black px-4 py-3.5 rounded-2xl border flex items-center gap-3 transition-all ${filter === r && view === 'gallery' ? getRarityColorClasses(r) : 'opacity-40 hover:opacity-100 border-transparent hover:bg-white/5'}`}
                 >
                   {getRarityIcon(r, 16)} {r}
                 </button>
@@ -416,12 +422,87 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        <div className="mt-auto">
+          <button 
+            onClick={() => { setView('faq'); setSelectedCard(null); setIsComparisonMode(false); }}
+            className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all border ${view === 'faq' ? 'bg-blue-600 text-white border-blue-500 shadow-lg' : 'opacity-50 hover:opacity-100 border-transparent hover:bg-white/5'}`}
+          >
+            <HelpCircle size={18} /> Protocol Briefing (FAQ)
+          </button>
+        </div>
       </aside>
 
-      {/* Main Pitch */}
+      {/* Main Content Area */}
       <main className="flex-1 p-8 md:p-16 overflow-y-auto h-screen relative scroll-smooth">
         <div className="max-w-7xl mx-auto">
-          {isRevealing && selectedCard ? (
+          {view === 'faq' ? (
+            /* FAQ PAGE */
+            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+               <div className="border-b pb-8 border-current opacity-10">
+                 <h2 className="text-5xl font-oswald uppercase leading-none mb-4">Protocol Briefing</h2>
+                 <p className="text-[11px] uppercase font-black tracking-[0.4em] opacity-40">System Documentation & Operational Guidelines</p>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <FAQItem 
+                   theme={theme}
+                   icon={<Sparkles size={24} />}
+                   question="What is FootyCards AI Lab?"
+                   answer="A high-end digital scouting platform that uses Dual-AI logic to create unique football cards. One AI engine fetches real-world statistics while the second generates cinematic portraits."
+                 />
+                 <FAQItem 
+                   theme={theme}
+                   icon={<Search size={24} />}
+                   question="How do I scout a player?"
+                   answer="Enter any player's name in the Scouting Module. The system will sync with real-time databases to verify their current club, nationality, and performance statistics."
+                 />
+                 <FAQItem 
+                   theme={theme}
+                   icon={<Camera size={24} />}
+                   question="AI Art vs Grounded Assets?"
+                   answer="When possible, the AI generates a cinematic portrait. For active stars, safety filters may apply; the system then falls back to grounded official assets from Wikimedia Commons."
+                 />
+                 <FAQItem 
+                   theme={theme}
+                   icon={<Swords size={24} />}
+                   question="How does the Battle Arena work?"
+                   answer="Enter Battle Mode and select exactly two cards from your treasury. The system will compare all six core statistics and highlight the superior athlete in green."
+                 />
+                 <FAQItem 
+                   theme={theme}
+                   icon={<Crown size={24} />}
+                   question="What do the Rarities mean?"
+                   answer="Players are tiered from Common to Legendary based on their real-world prestige, market value, and historical significance in the game."
+                 />
+                 <FAQItem 
+                   theme={theme}
+                   icon={<ShieldCheck size={24} />}
+                   question="Is my data safe?"
+                   answer="All treasury data is stored locally in your browser's secure treasury vault (LocalStorage). Clearing your browser data will reset your collection."
+                 />
+               </div>
+
+               <div className={`p-8 rounded-[2rem] border ${theme === 'dark' ? 'bg-blue-600/5 border-blue-500/20' : 'bg-blue-50 border-blue-200'}`}>
+                 <div className="flex flex-col md:flex-row items-center gap-8">
+                    <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-xl shadow-blue-600/30">
+                      <Zap size={40} />
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                      <h4 className="text-xl font-oswald uppercase mb-2">Ready to Recruit?</h4>
+                      <p className={`text-sm opacity-70 mb-6 ${theme === 'dark' ? 'font-light' : ''}`}>Your scouting scouts are waiting for your next command. Every draft is unique.</p>
+                      <button 
+                        onClick={() => setView('gallery')}
+                        className="px-8 py-3 bg-blue-600 text-white text-xs font-black uppercase rounded-xl hover:bg-blue-700 transition-all active:scale-95"
+                      >
+                        Return to Command Center
+                      </button>
+                    </div>
+                 </div>
+               </div>
+            </div>
+          ) : isRevealing && selectedCard ? (
+            /* Pack Opening */
             <div className="flex flex-col items-center justify-center min-h-[70vh] animate-in zoom-in-95 fade-in duration-1000">
               <div 
                 onClick={() => setIsRevealing(false)} 
