@@ -8,10 +8,11 @@ export const generatePlayerData = async (prompt: string): Promise<{ data: Partia
     model: 'gemini-3-flash-preview',
     contents: `Scout the professional Association Football (Soccer) player: "${prompt}". 
     1. Retrieve real-world stats (0-99) and market data.
-    2. FIND a direct, hotlink-friendly RAW image URL (JPG/PNG) of this player. 
-       - HIGHLY PREFER direct image paths from Wikimedia Commons (e.g., https://upload.wikimedia.org/.../name.jpg).
-       - AVOID page URLs (e.g., AVOID URLs containing "/wiki/File:"). 
-       - Ensure the URL ends in a common image extension (.jpg, .png, .webp).
+    2. FIND a direct, hotlink-friendly RAW image file URL of this player. 
+       - SEARCH specifically for Wikimedia Commons images.
+       - PREFERRED FORMAT: "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/FILENAME_HERE.jpg"
+       - ALTERNATIVE: Direct "upload.wikimedia.org" paths.
+       - AVOID page URLs like "/wiki/File:..." unless they are specifically the redirect path above.
     3. Return a detailed scouting report in JSON.
     
     Response MUST be valid JSON.
@@ -76,7 +77,11 @@ export const generatePlayerImage = async (name: string, club: string, rarity: Pl
     });
 
     const candidate = response.candidates?.[0];
-    if (candidate?.finishReason === 'SAFETY') throw new Error("Likeness restricted by AI safety filters.");
+    
+    // Check if safety filters blocked it
+    if (candidate?.finishReason === 'SAFETY') {
+      throw new Error("SAFETY_RESTRICTED");
+    }
 
     if (candidate?.content?.parts) {
       for (const part of candidate.content.parts) {
@@ -87,6 +92,8 @@ export const generatePlayerImage = async (name: string, club: string, rarity: Pl
     }
     throw new Error("Portrait generation failed.");
   } catch (err: any) {
+    // Re-throw specific safety error
+    if (err.message === "SAFETY_RESTRICTED") throw err;
     throw new Error(err.message || "Portrait restricted.");
   }
 };

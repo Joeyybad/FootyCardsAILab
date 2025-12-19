@@ -15,6 +15,7 @@
 - [x] Create project documentation and README.
 - [x] Add possibility to add a url image when you are on the card for player if there is no image for him 
 - [x] Use wikipedia to get image for players take the url image on wiki to use it on cards 
+- [x] fix the scrolling option when we are on the card detail to see the caracteristics of the player 
 
 ## Phase 3: Polish & Expansion [IN PROGRESS]
 - [ ] Export "Sticker" as PNG for social sharing.
